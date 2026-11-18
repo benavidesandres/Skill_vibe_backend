@@ -1,0 +1,19 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+*.tsbuildinfo
+
+# Variables de entorno (nunca subir credenciales)
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
