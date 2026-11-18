@@ -28,6 +28,10 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
   role!: UserRole;
 
+  // Presentación corta que se muestra en el perfil público del tutor
+  @Column({ type: 'text', nullable: true })
+  bio!: string | null;
+
   @Column({ name: 'is_active', default: true })
   isActive!: boolean;
 

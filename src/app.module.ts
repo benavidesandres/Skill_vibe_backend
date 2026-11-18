@@ -6,6 +6,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { SkillsModule } from './modules/skills/skills.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
     UsersModule,
     SkillsModule,
     RecommendationsModule,
+    BookingsModule,
+    ReviewsModule,
   ],
   controllers: [],
   providers: [],

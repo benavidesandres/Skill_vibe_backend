@@ -27,4 +27,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(UserRole, { message: 'El rol debe ser student o tutor' })
   role?: UserRole;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  bio?: string;
 }
