@@ -165,6 +165,8 @@ La contraseña se guarda cifrada con bcrypt y **nunca** se incluye en las respue
 | PATCH | `/users/:id` | Actualiza la propia cuenta (campos parciales) | 200 |
 | DELETE | `/users/:id` | Elimina la propia cuenta | 204 |
 
+El rol se elige al registrarse y no se puede cambiar con `PATCH /users/:id` (responde 400).
+
 ### Ofertas de tutoría — `/api/v1/skills`
 
 | Método | Ruta | Descripción | Respuesta |
@@ -193,6 +195,7 @@ La contraseña se guarda cifrada con bcrypt y **nunca** se incluye en las respue
 - `category`: `frontend`, `backend`, `mobile`, `database`, `devops`, `data` u `other`.
 - `level`: `beginner`, `intermediate` o `advanced`.
 - Para pausar una oferta: `PATCH /skills/:id` con `{ "isActive": false }`. Una oferta pausada no sale en el catálogo ni se puede reservar.
+- Una oferta que ya tiene reservas no se puede borrar (409), para no perder el historial ni las reseñas de los estudiantes. En ese caso se pausa.
 
 **Filtros del catálogo** (todos opcionales):
 
@@ -268,7 +271,10 @@ El rating general es el promedio de todas sus ofertas, ponderado por la cantidad
 | Tutor | `confirmed` | `completed` |
 | Estudiante | `pending` o `confirmed` | `cancelled` |
 
-Cualquier otro cambio responde 400.
+Cualquier otro cambio responde 400. Además:
+
+- Una reserva solo se puede marcar `completed` después de la hora de la sesión (400 si todavía no ocurre).
+- Un tutor no puede tener dos sesiones confirmadas que se crucen. Reservar en un horario que el tutor ya tiene confirmado, o confirmar una reserva que choca con otra confirmada, responde 409.
 
 ### Reseñas — `/api/v1/reviews`
 
@@ -301,11 +307,11 @@ Para que una ruta sea solo de un rol:
 
 | Código | Cuándo ocurre |
 |---|---|
-| 400 | Datos inválidos, id que no es UUID, fecha pasada, oferta pausada o cambio de estado no permitido |
+| 400 | Datos inválidos, id que no es UUID, fecha pasada, oferta pausada, cambio de estado no permitido o completar una sesión que todavía no ocurre |
 | 401 | Credenciales incorrectas, token ausente, inválido o expirado |
 | 403 | Rol sin permiso para la ruta, o modificar recursos de otro usuario (cuenta, oferta, reserva) |
 | 404 | El recurso no existe |
-| 409 | El email ya está registrado, o la reserva ya tiene reseña |
+| 409 | El email ya está registrado, la reserva ya tiene reseña, la oferta tiene reservas (no se puede borrar) o el horario del tutor ya está ocupado |
 
 ## Flujo de trabajo con Git
 
