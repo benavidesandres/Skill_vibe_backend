@@ -44,6 +44,11 @@ export class UsersService {
     return user;
   }
 
+  // Lo usa JwtStrategy; devuelve null en lugar de lanzar 404
+  findById(id: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { id } });
+  }
+
   // Lo usa AuthService en el login; devuelve null en lugar de lanzar error
   findByEmail(email: string): Promise<User | null> {
     return this.usersRepository.findOne({
