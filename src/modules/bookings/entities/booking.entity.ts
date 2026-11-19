@@ -61,6 +61,10 @@ export class Booking {
   })
   status!: BookingStatus;
 
+  // Enlace de la videollamada. Se genera cuando el tutor confirma la reserva
+  @Column({ name: 'meeting_link', type: 'varchar', nullable: true })
+  meetingLink!: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
