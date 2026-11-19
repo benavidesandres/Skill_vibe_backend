@@ -22,6 +22,9 @@ function crearReserva(
   return Object.assign(new Booking(), {
     id: BOOKING_ID,
     studentId: STUDENT_ID,
+    // Fecha pasada para poder completarla; hours entra en el chequeo de solapamiento
+    scheduledAt: new Date('2020-01-01T10:00:00Z'),
+    hours: 1,
     status,
     meetingLink,
     skill: { tutorId: TUTOR_ID },
@@ -34,6 +37,8 @@ function crearServicio(reserva: Booking) {
   const qb: Record<string, jest.Mock> = {};
   for (const metodo of [
     'innerJoinAndSelect',
+    'innerJoin',
+    'andWhere',
     'leftJoin',
     'addSelect',
     'where',
@@ -41,6 +46,8 @@ function crearServicio(reserva: Booking) {
     qb[metodo] = jest.fn().mockReturnValue(qb);
   }
   qb.getOne = jest.fn().mockResolvedValue(reserva);
+  // Sin otra reserva confirmada del tutor en ese horario
+  qb.getExists = jest.fn().mockResolvedValue(false);
 
   const bookingsRepository = {
     createQueryBuilder: jest.fn().mockReturnValue(qb),
