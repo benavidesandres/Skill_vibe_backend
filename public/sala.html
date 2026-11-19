@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala de clase · SkillVibe</title>
+<style>
+  :root { --bg:#171826; --panel:#232538; --line:#34374f; --text:#eceefb; --muted:#9a9db8;
+          --accent:#a855f7; --ok:#10b981; --danger:#ef4444; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, "Segoe UI", sans-serif;
+         display: flex; flex-direction: column; }
+  header, footer { display: flex; align-items: center; gap: 12px; padding: 14px 20px; }
+  header { justify-content: space-between; border-bottom: 1px solid var(--line); }
+  footer { justify-content: center; border-top: 1px solid var(--line); }
+  h1 { font-size: 1rem; margin: 0; font-weight: 600; }
+  #room { color: var(--muted); font-size: .85rem; }
+  #timer { font-variant-numeric: tabular-nums; color: var(--ok); }
+  main { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+         gap: 16px; padding: 16px; min-height: 0; }
+  .tile { position: relative; background: var(--panel); border: 1px solid var(--line);
+          border-radius: 10px; overflow: hidden; display: grid; place-items: center; min-height: 220px; }
+  .tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .center { text-align: center; padding: 16px; }
+  .avatar { width: 84px; height: 84px; border-radius: 50%; background: var(--accent); margin: 0 auto 10px;
+            display: grid; place-items: center; font-size: 2rem; font-weight: 700; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  .name { position: absolute; left: 12px; bottom: 10px; font-size: .85rem; background: rgba(0,0,0,.6);
+          padding: 2px 10px; border-radius: 999px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 6px; }
+  .talking .dot { animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .talking .dot { animation: none; } }
+  button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+           border-radius: 8px; padding: 10px 18px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.off { border-color: var(--danger); color: #ffb4b4; }
+  button.leave { background: var(--danger); border-color: var(--danger); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Clase en SkillVibe</h1>
+    <div id="room"></div>
+  </div>
+  <div id="timer" aria-live="off">00:00</div>
+</header>
+
+<main id="stage">
+  <section class="tile" aria-label="Tu cámara">
+    <video id="local" autoplay muted playsinline hidden></video>
+    <div class="center" id="localFallback">
+      <div class="avatar" id="meInitial">T</div>
+      <div class="muted" id="camMsg">Pidiendo acceso a tu cámara…</div>
+    </div>
+    <span class="name" id="meName">Tú</span>
+  </section>
+
+  <section class="tile" aria-label="Otro participante (simulado)" id="remote">
+    <div class="center">
+      <div class="avatar" style="background:#3b82f6">P</div>
+      <div class="muted" id="remoteMsg">Esperando al otro participante…</div>
+    </div>
+    <span class="name"><span class="dot"></span>Participante (simulado)</span>
+  </section>
+</main>
+
+<footer id="controls">
+  <button id="btnMic" type="button">Silenciar micrófono</button>
+  <button id="btnCam" type="button">Apagar cámara</button>
+  <button id="btnLeave" type="button" class="leave">Salir de la clase</button>
+</footer>
+
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var room = params.get('room');
+  var me = params.get('nombre') || 'Tú';
+  var $ = function (id) { return document.getElementById(id); };
+  var stream = null, timerId = null, talkId = null;
+
+  if (!room) {
+    $('stage').innerHTML = '<p class="center muted">Este enlace no tiene código de sala. Abre la clase desde tu tablero o desde el correo de recordatorio.</p>';
+    $('controls').hidden = true;
+    return;
+  }
+
+  $('room').textContent = 'Sala ' + room.slice(0, 8);
+  $('meName').textContent = me;
+  $('meInitial').textContent = me.charAt(0).toUpperCase();
+
+  // Temporizador de la clase
+  var start = Date.now();
+  timerId = setInterval(function () {
+    var s = Math.floor((Date.now() - start) / 1000);
+    var mm = String(Math.floor(s / 60)).padStart(2, '0'), ss = String(s % 60).padStart(2, '0');
+    $('timer').textContent = mm + ':' + ss;
+  }, 1000);
+
+  // Cámara y micrófono reales (solo se ven en tu pantalla)
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(function (s) {
+      stream = s;
+      $('local').srcObject = s;
+      $('local').hidden = false;
+      $('localFallback').hidden = true;
+    }).catch(function () {
+      $('camMsg').textContent = 'Sin acceso a la cámara. Puedes seguir en la sala.';
+    });
+  } else {
+    $('camMsg').textContent = 'Tu navegador no permite usar la cámara aquí.';
+  }
+
+  // Participante simulado: "entra" a los 4 s y alterna entre hablando y en silencio
+  setTimeout(function () {
+    $('remoteMsg').textContent = 'Conectado (simulado)';
+    $('remote').classList.add('talking');
+    talkId = setInterval(function () {
+      $('remote').classList.toggle('talking');
+    }, 3000);
+  }, 4000);
+
+  function toggle(btn, kind, onText, offText) {
+    btn.addEventListener('click', function () {
+      if (!stream) return;
+      var tracks = kind === 'mic' ? stream.getAudioTracks() : stream.getVideoTracks();
+      var enabled = !(tracks[0] && tracks[0].enabled);
+      tracks.forEach(function (t) { t.enabled = enabled; });
+      btn.textContent = enabled ? onText : offText;
+      btn.classList.toggle('off', !enabled);
+    });
+  }
+  toggle($('btnMic'), 'mic', 'Silenciar micrófono', 'Activar micrófono');
+  toggle($('btnCam'), 'cam', 'Apagar cámara', 'Encender cámara');
+
+  $('btnLeave').addEventListener('click', function () {
+    if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+    clearInterval(timerId); clearInterval(talkId);
+    $('stage').innerHTML = '<p class="center">Saliste de la clase. Puedes cerrar esta pestaña.<br><span class="muted">El tutor finaliza la clase desde SkillVibe.</span></p>';
+    $('controls').hidden = true;
+  });
+})();
+</script>
+</body>
+</html>

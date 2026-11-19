@@ -57,6 +57,7 @@ La base de datos corre en un contenedor de Docker definido en `docker-compose.ym
 | `DB_SYNCHRONIZE` | `true` | Crea/actualiza las tablas a partir de las entidades (solo desarrollo) |
 | `JWT_SECRET` | — | Secreto para firmar los tokens (cámbialo) |
 | `JWT_EXPIRES_IN` | `1d` | Tiempo de vida del token |
+| `VIDEO_BASE_URL` | `http://localhost:3000` | URL desde la que se sirve `sala.html`; es la base de los links de videollamada (la barra final se ignora) |
 
 > **¿Ya tienes PostgreSQL instalado en tu PC?** Ocupa el puerto 5432 y la API se conectará a esa instalación en lugar de Docker (error *"password authentication failed"*). Cambia `DB_PORT=5433` en tu `.env` y ejecuta `docker compose up -d --force-recreate`.
 
@@ -92,12 +93,17 @@ src/
 │   │   └── interfaces/
 │   ├── bookings/                # Reservas y su flujo de estados
 │   ├── reviews/                 # Reseñas y rating de las ofertas
+│   ├── video/                   # VideoRoomProvider y la sala simulada
 │   └── recommendations/
 ├── common/
 │   └── transformers/            # decimalTransformer (decimal de PostgreSQL a number)
 ├── app.module.ts
-└── main.ts                      # Prefijo /api/v1, ValidationPipe y serialización global
+└── main.ts                      # Prefijo /api/v1, ValidationPipe, serialización global y public/
+public/
+└── sala.html                    # Sala de videollamada simulada, en /sala.html
 ```
+
+`public/` se sirve como archivos estáticos desde la raíz (`http://localhost:3000/sala.html`), fuera del prefijo `/api/v1` y sin token.
 
 ## Endpoints
 
@@ -275,6 +281,22 @@ Cualquier otro cambio responde 400. Además:
 
 - Una reserva solo se puede marcar `completed` después de la hora de la sesión (400 si todavía no ocurre).
 - Un tutor no puede tener dos sesiones confirmadas que se crucen. Reservar en un horario que el tutor ya tiene confirmado, o confirmar una reserva que choca con otra confirmada, responde 409.
+
+**Videollamada** — `meetingLink`
+
+Cuando el tutor pasa la reserva a `confirmed`, la API genera un link de videollamada y lo guarda en el mismo cambio de estado. Solo se genera una vez: no se crea en otros estados ni se reemplaza si ya existe.
+
+```json
+{
+  "id": "68dccba5-2283-49b7-930b-e0af6176c161",
+  "status": "confirmed",
+  "meetingLink": "http://localhost:3000/sala.html?room=9f1c2b7e4a6d4c3e8b5a0d1f2e3c4b5a"
+}
+```
+
+`meetingLink` solo tiene valor mientras la reserva está `confirmed`. En `pending`, `rejected`, `cancelled` y `completed` la respuesta trae `null`. Lo ven únicamente el estudiante y el tutor de la reserva, por `GET /bookings/mine` y `GET /bookings/:id`.
+
+> **La sala es simulada.** `sala.html` muestra tu cámara y micrófono locales, un temporizador y un segundo participante falso que "entra" a los 4 segundos. No transmite video entre personas. Para pasar a Jitsi, Zoom o WebRTC se escribe otra clase que extienda `VideoRoomProvider` (método `generateMeetingLink(sessionId)`) y se cambia `useClass` en `src/modules/video/video.module.ts`. `BookingsService` no se toca.
 
 ### Reseñas — `/api/v1/reviews`
 

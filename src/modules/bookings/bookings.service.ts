@@ -13,6 +13,7 @@ import { Skill } from '../skills/entities/skill.entity';
 import { Booking } from './entities/booking.entity';
 import { BookingStatus } from './enums/booking-status.enum';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { VideoRoomProvider } from '../video/video-room.provider';
 
 // Cambios de estado permitidos para cada parte de la reserva
 const TUTOR_TRANSITIONS: Partial<Record<BookingStatus, BookingStatus[]>> = {
@@ -31,6 +32,7 @@ export class BookingsService {
     private readonly bookingsRepository: Repository<Booking>,
     @InjectRepository(Skill)
     private readonly skillsRepository: Repository<Skill>,
+    private readonly videoRoomProvider: VideoRoomProvider,
   ) {}
 
   async create(dto: CreateBookingDto, student: User): Promise<Booking> {
@@ -129,8 +131,17 @@ export class BookingsService {
       );
     }
 
+    // Al confirmar se crea el link de la videollamada, solo si no existe ya.
+    // Se guarda junto con el estado en la misma operación
+    const changes: Partial<Booking> = { status };
+    if (status === BookingStatus.CONFIRMED && !booking.meetingLink) {
+      changes.meetingLink = this.videoRoomProvider.generateMeetingLink(
+        booking.id,
+      );
+    }
+
     // update() en vez de save() para no tocar las relaciones cargadas a medias
-    await this.bookingsRepository.update(booking.id, { status });
+    await this.bookingsRepository.update(booking.id, changes);
     return this.findOne(id, user);
   }
 
