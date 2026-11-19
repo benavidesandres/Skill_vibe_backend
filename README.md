@@ -105,6 +105,17 @@ src/
 
 Este repositorio es **solo la API**. La interfaz (Bootstrap 5 + Vite) vive en un proyecto aparte, `Skill_vibe_frontend`, que incluye también la sala de videollamada `/sala.html`. El frontend consume esta API por HTTP; CORS está habilitado.
 
+## Documentación Swagger
+
+Con la API corriendo, la documentación interactiva está en:
+
+- **UI:** http://localhost:3000/api/docs
+- **JSON (OpenAPI):** http://localhost:3000/api/docs-json (sirve para importar en Postman)
+
+Para probar rutas 🔒: ejecuta `POST /auth/login` (o `register`), copia el `accessToken`, pulsa **Authorize** arriba a la derecha y pégalo (sin la palabra `Bearer`). El token queda guardado aunque recargues la página.
+
+Los esquemas se generan solos desde los DTOs y entidades con el plugin `@nestjs/swagger` (configurado en `nest-cli.json`), así que basta con mantener las validaciones de `class-validator` al día.
+
 ## Endpoints
 
 Las rutas marcadas con 🔒 requieren el header:
