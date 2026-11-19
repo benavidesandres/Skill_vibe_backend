@@ -1,15 +1,10 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe, Logger } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
-  // Sirve la carpeta public/ (ej. /sala.html). Va fuera del prefijo /api/v1 y sin JWT
-  app.useStaticAssets(join(process.cwd(), 'public'));
+  const app = await NestFactory.create(AppModule);
 
   // Global prefix for API endpoints
   app.setGlobalPrefix('api/v1');
