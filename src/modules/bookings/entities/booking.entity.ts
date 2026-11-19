@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Transform } from 'class-transformer';
 import { User } from '../../users/entities/user.entity';
 import { Skill } from '../../skills/entities/skill.entity';
 import { decimalTransformer } from '../../../common/transformers/decimal.transformer';
@@ -61,7 +62,12 @@ export class Booking {
   })
   status!: BookingStatus;
 
-  // Enlace de la videollamada. Se genera cuando el tutor confirma la reserva
+  // Enlace de la videollamada. Se genera cuando el tutor confirma la reserva.
+  // En la respuesta solo sale mientras la reserva está confirmada; en el resto
+  // de estados se envía null (el valor guardado en la base no cambia)
+  @Transform(({ value, obj }) =>
+    obj.status === BookingStatus.CONFIRMED ? value : null,
+  )
   @Column({ name: 'meeting_link', type: 'varchar', nullable: true })
   meetingLink!: string | null;
 
