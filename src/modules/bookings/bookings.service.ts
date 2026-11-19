@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -46,6 +47,9 @@ export class BookingsService {
     const scheduledAt = new Date(dto.scheduledAt);
     if (scheduledAt.getTime() <= Date.now()) {
       throw new BadRequestException('La fecha de la sesión debe ser futura');
+    }
+    if (await this.hasOverlap(skill.tutorId, scheduledAt, dto.hours)) {
+      throw new ConflictException('El tutor ya tiene una sesión en ese horario');
     }
 
     const booking = this.bookingsRepository.create({
@@ -105,10 +109,55 @@ export class BookingsService {
         `No puedes cambiar la reserva de ${booking.status} a ${status}`,
       );
     }
+    if (
+      status === BookingStatus.COMPLETED &&
+      booking.scheduledAt.getTime() > Date.now()
+    ) {
+      throw new BadRequestException('La sesión todavía no ocurre');
+    }
+    if (
+      status === BookingStatus.CONFIRMED &&
+      (await this.hasOverlap(
+        booking.skill.tutorId,
+        booking.scheduledAt,
+        booking.hours,
+        booking.id,
+      ))
+    ) {
+      throw new ConflictException(
+        'Ya confirmaste otra sesión en ese horario',
+      );
+    }
 
     // update() en vez de save() para no tocar las relaciones cargadas a medias
     await this.bookingsRepository.update(booking.id, { status });
     return this.findOne(id, user);
+  }
+
+  // ¿El tutor tiene una reserva confirmada que se cruce con [start, start + hours)?
+  private hasOverlap(
+    tutorId: string,
+    start: Date,
+    hours: number,
+    excludeId?: string,
+  ): Promise<boolean> {
+    const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
+    const qb = this.bookingsRepository
+      .createQueryBuilder('booking')
+      .innerJoin('booking.skill', 'skill')
+      .where('skill.tutorId = :tutorId', { tutorId })
+      .andWhere('booking.status = :status', {
+        status: BookingStatus.CONFIRMED,
+      })
+      .andWhere('booking.scheduledAt < :end', { end })
+      .andWhere(
+        "booking.scheduledAt + booking.hours * interval '1 hour' > :start",
+        { start },
+      );
+    if (excludeId) {
+      qb.andWhere('booking.id != :excludeId', { excludeId });
+    }
+    return qb.getExists();
   }
 
   // Une la oferta, el tutor y el estudiante con solo sus datos públicos
