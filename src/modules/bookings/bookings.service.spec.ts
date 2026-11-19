@@ -84,5 +84,128 @@ describe('BookingsService - videollamada', () => {
       });
       expect(respuesta.meetingLink).toBe(LINK);
     });
+
+    it('confirmar dos veces no cambia el link', async () => {
+      const reserva = crearReserva(BookingStatus.PENDING);
+      const { service, videoRoomProvider } = crearServicio(reserva);
+      const tutor = usuario(TUTOR_ID);
+
+      await service.updateStatus(BOOKING_ID, BookingStatus.CONFIRMED, tutor);
+      // La segunda confirmación la rechazan las reglas de transición (400)
+      await expect(
+        service.updateStatus(BOOKING_ID, BookingStatus.CONFIRMED, tutor),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(reserva.meetingLink).toBe(LINK);
+      expect(videoRoomProvider.generateMeetingLink).toHaveBeenCalledTimes(1);
+    });
+
+    it('no regenera el link si la reserva ya tenía uno', async () => {
+      const reserva = crearReserva(BookingStatus.PENDING, 'http://viejo/link');
+      const { service, bookingsRepository, videoRoomProvider } =
+        crearServicio(reserva);
+
+      await service.updateStatus(
+        BOOKING_ID,
+        BookingStatus.CONFIRMED,
+        usuario(TUTOR_ID),
+      );
+
+      expect(videoRoomProvider.generateMeetingLink).not.toHaveBeenCalled();
+      expect(bookingsRepository.update).toHaveBeenCalledWith(BOOKING_ID, {
+        status: BookingStatus.CONFIRMED,
+      });
+      expect(reserva.meetingLink).toBe('http://viejo/link');
+    });
+  });
+
+  describe('en otros estados', () => {
+    it('al rechazar no genera link', async () => {
+      const reserva = crearReserva(BookingStatus.PENDING);
+      const { service, videoRoomProvider } = crearServicio(reserva);
+
+      await service.updateStatus(
+        BOOKING_ID,
+        BookingStatus.REJECTED,
+        usuario(TUTOR_ID),
+      );
+
+      expect(videoRoomProvider.generateMeetingLink).not.toHaveBeenCalled();
+      expect(reserva.meetingLink).toBeNull();
+    });
+
+    it('al cancelar (estudiante) no genera link', async () => {
+      const reserva = crearReserva(BookingStatus.PENDING);
+      const { service, videoRoomProvider } = crearServicio(reserva);
+
+      await service.updateStatus(
+        BOOKING_ID,
+        BookingStatus.CANCELLED,
+        usuario(STUDENT_ID),
+      );
+
+      expect(videoRoomProvider.generateMeetingLink).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('respuesta serializada', () => {
+    // La respuesta HTTP pasa por ClassSerializerInterceptor, que usa instanceToPlain
+    it('muestra meetingLink solo si la reserva está confirmada', () => {
+      const confirmada = crearReserva(BookingStatus.CONFIRMED, LINK);
+      expect(instanceToPlain(confirmada).meetingLink).toBe(LINK);
+    });
+
+    it.each([
+      BookingStatus.PENDING,
+      BookingStatus.REJECTED,
+      BookingStatus.CANCELLED,
+      BookingStatus.COMPLETED,
+    ])('devuelve null en estado %s aunque haya un link guardado', (estado) => {
+      const reserva = crearReserva(estado, LINK);
+      expect(instanceToPlain(reserva).meetingLink).toBeNull();
+    });
+
+    it('la reserva completada que devuelve updateStatus sale con null', async () => {
+      const reserva = crearReserva(BookingStatus.CONFIRMED, LINK);
+      const { service } = crearServicio(reserva);
+
+      const respuesta = await service.updateStatus(
+        BOOKING_ID,
+        BookingStatus.COMPLETED,
+        usuario(TUTOR_ID),
+      );
+
+      expect(instanceToPlain(respuesta).meetingLink).toBeNull();
+      // El valor guardado no se borra, solo se oculta en la respuesta
+      expect(reserva.meetingLink).toBe(LINK);
+    });
+  });
+
+  describe('acceso', () => {
+    it('un usuario ajeno recibe 403 al consultar la reserva', async () => {
+      const reserva = crearReserva(BookingStatus.CONFIRMED, LINK);
+      const { service } = crearServicio(reserva);
+
+      await expect(
+        service.findOne(BOOKING_ID, usuario(AJENO_ID)),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('un usuario ajeno recibe 403 al intentar confirmar y no se genera link', async () => {
+      const reserva = crearReserva(BookingStatus.PENDING);
+      const { service, bookingsRepository, videoRoomProvider } =
+        crearServicio(reserva);
+
+      await expect(
+        service.updateStatus(
+          BOOKING_ID,
+          BookingStatus.CONFIRMED,
+          usuario(AJENO_ID),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(videoRoomProvider.generateMeetingLink).not.toHaveBeenCalled();
+      expect(bookingsRepository.update).not.toHaveBeenCalled();
+    });
   });
 });
