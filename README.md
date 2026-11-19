@@ -276,6 +276,22 @@ El rating general es el promedio de todas sus ofertas, ponderado por la cantidad
 
 Cualquier otro cambio responde 400.
 
+**Videollamada** — `meetingLink`
+
+Cuando el tutor pasa la reserva a `confirmed`, la API genera un link de videollamada y lo guarda en el mismo cambio de estado. Solo se genera una vez: no se crea en otros estados ni se reemplaza si ya existe.
+
+```json
+{
+  "id": "68dccba5-2283-49b7-930b-e0af6176c161",
+  "status": "confirmed",
+  "meetingLink": "http://localhost:3000/sala.html?room=9f1c2b7e4a6d4c3e8b5a0d1f2e3c4b5a"
+}
+```
+
+`meetingLink` solo tiene valor mientras la reserva está `confirmed`. En `pending`, `rejected`, `cancelled` y `completed` la respuesta trae `null`. Lo ven únicamente el estudiante y el tutor de la reserva, por `GET /bookings/mine` y `GET /bookings/:id`.
+
+> **La sala es simulada.** `sala.html` muestra tu cámara y micrófono locales, un temporizador y un segundo participante falso que "entra" a los 4 segundos. No transmite video entre personas. Para pasar a Jitsi, Zoom o WebRTC se escribe otra clase que extienda `VideoRoomProvider` (método `generateMeetingLink(sessionId)`) y se cambia `useClass` en `src/modules/video/video.module.ts`. `BookingsService` no se toca.
+
 ### Reseñas — `/api/v1/reviews`
 
 | Método | Ruta | Descripción | Respuesta |
