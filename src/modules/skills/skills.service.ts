@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -6,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { User } from '../users/entities/user.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import { Skill } from './entities/skill.entity';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
@@ -125,6 +127,17 @@ export class SkillsService {
 
   async remove(id: string, tutor: User): Promise<void> {
     const skill = await this.findOwned(id, tutor);
+
+    // Borrarla se llevaría las reservas y reseñas de los estudiantes (CASCADE)
+    const hasBookings = await this.skillsRepository.manager.exists(Booking, {
+      where: { skillId: skill.id },
+    });
+    if (hasBookings) {
+      throw new ConflictException(
+        'La oferta tiene reservas; páusala con isActive: false',
+      );
+    }
+
     await this.skillsRepository.remove(skill);
   }
 
