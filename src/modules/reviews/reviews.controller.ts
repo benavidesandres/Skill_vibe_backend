@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
 import { Review } from './entities/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -20,11 +21,14 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 /**
  * Sin prefijo propio porque tiene una ruta bajo /reviews y otra bajo /skills.
  */
+@ApiTags('Reviews')
 @Controller()
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
   // POST /api/v1/reviews  -> solo el estudiante de una reserva completada
+  @ApiOperation({ summary: 'Reseñar una reserva completada (estudiante)' })
+  @ApiBearerAuth()
   @Post('reviews')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.STUDENT)
@@ -36,6 +40,7 @@ export class ReviewsController {
   }
 
   // GET /api/v1/skills/:skillId/reviews  -> público
+  @ApiOperation({ summary: 'Reseñas públicas de una oferta' })
   @Get('skills/:skillId/reviews')
   findBySkill(
     @Param('skillId', ParseUUIDPipe) skillId: string,

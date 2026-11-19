@@ -24,10 +24,10 @@ describe('SimulatedVideoRoomProvider', () => {
     );
   });
 
-  it('usa http://localhost:3000 si VIDEO_BASE_URL no está definida', () => {
+  it('usa http://localhost:5173 si VIDEO_BASE_URL no está definida', () => {
     const link = crearProvider(undefined).generateMeetingLink(sessionId);
 
-    expect(link.startsWith('http://localhost:3000/sala.html?room=')).toBe(true);
+    expect(link.startsWith('http://localhost:5173/sala.html?room=')).toBe(true);
   });
 
   it('da un link distinto en cada llamada', () => {

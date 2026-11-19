@@ -1,15 +1,11 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe, Logger } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
-  // Sirve la carpeta public/ (ej. /sala.html). Va fuera del prefijo /api/v1 y sin JWT
-  app.useStaticAssets(join(process.cwd(), 'public'));
+  const app = await NestFactory.create(AppModule);
 
   // Global prefix for API endpoints
   app.setGlobalPrefix('api/v1');
@@ -32,9 +28,25 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors();
 
+  // Documentación Swagger en /api/docs (JSON en /api/docs-json)
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('SkillVibes API')
+    .setDescription(
+      'Marketplace de tutorías: usuarios, ofertas (skills), reservas y reseñas. ' +
+        'Para las rutas protegidas haz login, copia el accessToken y pégalo en "Authorize".',
+    )
+    .setVersion('1.0.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   logger.log(`🚀 SkillVibes Backend is running on: http://localhost:${port}/api/v1`);
+  logger.log(`📚 Swagger: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

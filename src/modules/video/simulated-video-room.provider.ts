@@ -3,10 +3,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VideoRoomProvider } from './video-room.provider';
 
-const DEFAULT_BASE_URL = 'http://localhost:3000';
+const DEFAULT_BASE_URL = 'http://localhost:5173';
 
 /**
- * Sala simulada: apunta a public/sala.html de esta misma API.
+ * Sala simulada: apunta a /sala.html del frontend (proyecto Skill_vibe_frontend).
  * No usa ningún servicio externo de video.
  */
 @Injectable()

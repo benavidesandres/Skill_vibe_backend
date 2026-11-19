@@ -12,6 +12,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SkillsService } from './skills.service';
 import { Skill } from './entities/skill.entity';
 import { CreateSkillDto } from './dto/create-skill.dto';
@@ -29,17 +30,21 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
  * Ofertas de tutoría. Ver el catálogo es público;
  * publicar, editar y borrar es solo para tutores.
  */
+@ApiTags('Skills')
 @Controller('skills')
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 
   // GET /api/v1/skills?search=react&category=frontend&minPrice=10&sort=price_asc&page=1
+  @ApiOperation({ summary: 'Catálogo público con filtros, orden y paginación' })
   @Get()
   findCatalog(@Query() query: QuerySkillsDto): Promise<PaginatedSkills> {
     return this.skillsService.findCatalog(query);
   }
 
   // GET /api/v1/skills/mine  (va antes de :id para que "mine" no se lea como id)
+  @ApiOperation({ summary: 'Mis ofertas (tutor), incluidas las pausadas' })
+  @ApiBearerAuth()
   @Get('mine')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.TUTOR)
@@ -48,12 +53,15 @@ export class SkillsController {
   }
 
   // GET /api/v1/skills/:id
+  @ApiOperation({ summary: 'Ver una oferta por id' })
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Skill> {
     return this.skillsService.findOne(id);
   }
 
   // POST /api/v1/skills
+  @ApiOperation({ summary: 'Publicar oferta (tutor)' })
+  @ApiBearerAuth()
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.TUTOR)
@@ -65,6 +73,8 @@ export class SkillsController {
   }
 
   // PATCH /api/v1/skills/:id  -> solo el tutor dueño
+  @ApiOperation({ summary: 'Editar / pausar mi oferta (tutor dueño)' })
+  @ApiBearerAuth()
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.TUTOR)
@@ -77,6 +87,8 @@ export class SkillsController {
   }
 
   // DELETE /api/v1/skills/:id  -> 204 No Content, solo el tutor dueño
+  @ApiOperation({ summary: 'Borrar mi oferta sin reservas (tutor dueño)' })
+  @ApiBearerAuth()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard, RolesGuard)

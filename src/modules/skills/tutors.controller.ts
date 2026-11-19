@@ -5,6 +5,7 @@ import {
   Param,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SkillsService } from './skills.service';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/enums/user-role.enum';
@@ -13,6 +14,7 @@ import { TutorProfile } from './interfaces/tutor-profile.interface';
 /**
  * Perfil público del tutor: datos públicos, ofertas activas y rating.
  */
+@ApiTags('Tutors')
 @Controller('tutors')
 export class TutorsController {
   constructor(
@@ -21,6 +23,7 @@ export class TutorsController {
   ) {}
 
   // GET /api/v1/tutors/:id
+  @ApiOperation({ summary: 'Perfil público del tutor con ofertas y rating' })
   @Get(':id')
   async findProfile(
     @Param('id', ParseUUIDPipe) id: string,

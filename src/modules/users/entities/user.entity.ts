@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { ApiHideProperty } from '@nestjs/swagger';
 import { UserRole } from '../enums/user-role.enum';
 
 @Entity('users')
@@ -21,6 +22,7 @@ export class User {
 
   // Se guarda el hash (bcrypt), nunca la contraseña en texto plano.
   // @Exclude evita que se envíe en las respuestas JSON.
+  @ApiHideProperty()
   @Exclude()
   @Column()
   password!: string;
