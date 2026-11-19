@@ -57,6 +57,7 @@ La base de datos corre en un contenedor de Docker definido en `docker-compose.ym
 | `DB_SYNCHRONIZE` | `true` | Crea/actualiza las tablas a partir de las entidades (solo desarrollo) |
 | `JWT_SECRET` | — | Secreto para firmar los tokens (cámbialo) |
 | `JWT_EXPIRES_IN` | `1d` | Tiempo de vida del token |
+| `VIDEO_BASE_URL` | `http://localhost:3000` | URL desde la que se sirve `sala.html`; es la base de los links de videollamada (la barra final se ignora) |
 
 > **¿Ya tienes PostgreSQL instalado en tu PC?** Ocupa el puerto 5432 y la API se conectará a esa instalación en lugar de Docker (error *"password authentication failed"*). Cambia `DB_PORT=5433` en tu `.env` y ejecuta `docker compose up -d --force-recreate`.
 
