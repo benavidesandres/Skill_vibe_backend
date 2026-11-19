@@ -93,12 +93,17 @@ src/
 │   │   └── interfaces/
 │   ├── bookings/                # Reservas y su flujo de estados
 │   ├── reviews/                 # Reseñas y rating de las ofertas
+│   ├── video/                   # VideoRoomProvider y la sala simulada
 │   └── recommendations/
 ├── common/
 │   └── transformers/            # decimalTransformer (decimal de PostgreSQL a number)
 ├── app.module.ts
-└── main.ts                      # Prefijo /api/v1, ValidationPipe y serialización global
+└── main.ts                      # Prefijo /api/v1, ValidationPipe, serialización global y public/
+public/
+└── sala.html                    # Sala de videollamada simulada, en /sala.html
 ```
+
+`public/` se sirve como archivos estáticos desde la raíz (`http://localhost:3000/sala.html`), fuera del prefijo `/api/v1` y sin token.
 
 ## Endpoints
 
